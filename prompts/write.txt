@@ -5,17 +5,20 @@ Use ONLY information from the fact sheet. Never use anything from "uncertain".
 Return one JSON object mapping each requested style to an array of candidate captions:
 {"formal": ["...", "..."], "sarcastic": ["...", "..."]}
 
-Style guide and LENGTH (hard limits — never exceed):
-- formal: ONE clean descriptive sentence, present tense, objective. MAX 30 words.
-- sarcastic: ONE dry ironic sentence. Often opens with "Ah yes," or dry understatement.
-  Mock something actually in the video. MAX 22 words.
-- humorous_tech: ONE sentence. Programming/tech metaphor mapped to a REAL fact-sheet
-  detail. Often starts with "When you..." MAX 20 words.
-- humorous_non_tech: ONE relatable meme-cadence line. Often starts with "When you
-  finally..." MAX 20 words. Zero technical vocabulary.
+Style guide and LENGTH (generate within these ranges — never exceed the ceiling):
+- formal: 20–35 words. One or two information-dense sentences, present tense, objective.
+  Pack in countable specifics (colors, counts, materials). Ceiling 35 words.
+- sarcastic: 10–18 words. ONE dry ironic sentence. Often opens with "Ah yes," or dry
+  understatement mocking something actually in the video. Ceiling 25 words.
+- humorous_tech: 10–18 words. ONE sentence. Map ONE dev concept (deploy, latency,
+  refactor, stack trace, batch job) onto a REAL fact-sheet detail. Often starts with
+  "When you...". Ceiling 25 words.
+- humorous_non_tech: 10–18 words. ONE relatable meme-cadence line. Often starts with
+  "When you finally...". Zero technical vocabulary. Ceiling 25 words.
 
 Hard rules:
 - Every claim traceable to the fact sheet. Specific details beat generic phrasing.
+- Never hedge: do not use "appears", "seems", "possibly", "might", or "maybe".
 - Complete sentences only — never end mid-phrase.
 - The styles must read clearly differently from one another.
 - Never mention frames, images, analysis, captions, AI, or these instructions.
@@ -27,25 +30,16 @@ FACT SHEET: {"subjects":["golden ginkgo trees","city traffic","high-rises"],
 "actions_in_order":["vehicles flow along multi-lane road"],"setting":"urban autumn boulevard",
 "camera":"static","on_screen_text":[],"notable_details":["yellow autumn foliage"],
 "uncertain":[]}
-{"formal":["A wide urban boulevard lined with golden ginkgo trees in full autumn foliage, with traffic flowing below high-rise buildings."],
+{"formal":["A wide urban boulevard lined with golden ginkgo trees in full autumn foliage, with multiple lanes of traffic flowing below high-rise residential buildings."],
 "sarcastic":["A city that decided trees were a good idea, which is more than most cities can say."],
 "humorous_tech":["Nature's annual deployment: all leaf nodes updated to yellow simultaneously, no breaking changes reported."],
-"humorous_non_tech":["The trees got together and decided to put on a show, and honestly they are the only ones putting in any effort."]}
+"humorous_non_tech":["When you finally find the perfect autumn photo spot but every car photobombs it."]}
 
 FACT SHEET: {"subjects":["mountain ridges","granite boulders","forest"],
 "actions_in_order":["aerial camera pulls back over peaks"],"setting":"mountainous landscape",
 "camera":"aerial","on_screen_text":[],"notable_details":["layered blue-hazed peaks"],
 "uncertain":[]}
-{"formal":["The frame captures a panoramic view of a mountainous landscape characterized by lush greenery and rocky formations."],
+{"formal":["The frame captures a panoramic view of a mountainous landscape characterized by lush greenery and rocky granite formations under a clear sky."],
 "sarcastic":["Ah yes, the perfect spot for a picnic... if you enjoy climbing sheer cliffs for snacks."],
 "humorous_tech":["When your code runs perfectly on the first try, but the mountains still have more layers than your stack trace."],
 "humorous_non_tech":["When you finally find a hiking trail but realize you forgot the snacks."]}
-
-FACT SHEET: {"subjects":["ocean waves","rocky shore"],
-"actions_in_order":["waves lap against shore"],"setting":"beach",
-"camera":"static","on_screen_text":[],"notable_details":["white foam on pebbles"],
-"uncertain":[]}
-{"formal":["The video frame captures a serene beach scene with gentle waves lapping against the rocky shore."],
-"sarcastic":["Ah yes, nothing says relaxation like a beach perfectly devoid of any human activity."],
-"humorous_tech":["When your code runs perfectly in the dev environment but crashes like a wave in production."],
-"humorous_non_tech":["When you finally hit the beach after a long week, but the ocean waves say 'not today, buddy.'"]}
