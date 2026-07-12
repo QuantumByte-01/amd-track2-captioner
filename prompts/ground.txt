@@ -16,5 +16,8 @@ Rules:
 - Report ONLY what is directly visible in the frames.
 - Never invent events between frames. Never guess causes, intentions, or backstory.
 - Ambiguous observations go in "uncertain", nowhere else.
+- Count what is countable: lanes, people, vehicles, animals, objects, seats, lanes.
+- Name colors and materials (granite, pebble, red track, orange tabby).
+- Note motion direction and camera movement when visible.
 - Prefer specific over generic ("golden ginkgo trees lining a boulevard" beats "trees").
 - Short items. No storytelling. No markdown. JSON only.
