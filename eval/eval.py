@@ -18,6 +18,17 @@ from src import config, llm  # noqa: E402
 
 STYLES = config.STYLE_ORDER
 
+_EVAL_JUDGE_SYSTEM = """You score ONE video caption against a fact sheet and style definition.
+A REFERENCE caption shows the target tone/register (not ground truth for facts).
+
+Return JSON only, no markdown:
+{"accuracy": 0.0, "style": 0.0}
+
+accuracy 0.0-1.0: every claim must be supported by the fact sheet. Unsupported claims cap at 0.3.
+Generic captions that could fit many videos cap at 0.6. Specific grounded detail scores higher.
+
+style 0.0-1.0: tone, register, and length match the STYLE definition and REFERENCE cadence."""
+
 
 def build_tasks(refs: dict) -> list[dict]:
     return [
@@ -30,37 +41,63 @@ def build_tasks(refs: dict) -> list[dict]:
     ]
 
 
+def _parse_eval_scores(raw: object) -> tuple[float, float]:
+    if isinstance(raw, dict):
+        if "accuracy" in raw and "style" in raw:
+            return float(raw["accuracy"]), float(raw["style"])
+        if raw.get("scores") and isinstance(raw["scores"], list) and raw["scores"]:
+            s = raw["scores"][0]
+            if isinstance(s, dict):
+                return float(s.get("accuracy", 0)), float(s.get("style", 0))
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(llm._extract_json_object(raw))
+            return _parse_eval_scores(parsed)
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return 0.0, 0.0
+
+
 def score_caption(
     fact_sheet: dict,
     style: str,
     caption_text: str,
     reference: str,
 ) -> tuple[float, float]:
-    system = llm.load_prompt("judge.txt")
     user = (
         f"FACT SHEET:\n{json.dumps(fact_sheet, ensure_ascii=False)}\n\n"
         f"STYLE: {style}\n"
         f"DEFINITION: {config.STYLE_DEFINITIONS[style]}\n\n"
         f"REFERENCE (tone anchor, not ground truth):\n{reference}\n\n"
-        f"CANDIDATES:\n0. {caption_text}"
+        f"CAPTION TO SCORE:\n{caption_text}"
     )
     messages = [
-        {"role": "system", "content": system},
+        {"role": "system", "content": _EVAL_JUDGE_SYSTEM},
         {"role": "user", "content": user},
     ]
     try:
         result = llm.chat(
             messages,
+            model=config.MODEL_CAPTION,
             json_mode=True,
             temperature=0.0,
-            max_tokens=400,
+            max_tokens=200,
             stage=f"eval-{style}",
         )
-        if isinstance(result, dict) and result.get("scores"):
-            s = result["scores"][0]
-            return float(s.get("accuracy", 0)), float(s.get("style", 0))
+        acc, sty = _parse_eval_scores(result)
+        if acc or sty:
+            return acc, sty
+        result2 = llm.chat(
+            messages,
+            model=config.MODEL_CAPTION,
+            json_mode=False,
+            temperature=0.0,
+            max_tokens=200,
+            stage=f"eval-{style}-text",
+        )
+        return _parse_eval_scores(result2)
     except Exception as e:
-        print(f"eval judge failed: {e}", file=sys.stderr)
+        print(f"eval judge failed ({style}): {e}", file=sys.stderr)
     return 0.0, 0.0
 
 
@@ -111,8 +148,15 @@ def main() -> None:
         for style in STYLES:
             cap = captions.get(style, "")
             acc, sty = score_caption(
-                {"setting": ref["desc"], "subjects": [], "actions_in_order": [],
-                 "camera": "", "on_screen_text": [], "notable_details": [], "uncertain": []},
+                {
+                    "setting": ref["desc"],
+                    "subjects": [],
+                    "actions_in_order": [],
+                    "camera": "",
+                    "on_screen_text": [],
+                    "notable_details": [],
+                    "uncertain": [],
+                },
                 style,
                 cap,
                 ref[style],
@@ -121,7 +165,15 @@ def main() -> None:
             acc_sum += acc
             sty_sum += sty
             n += 1
-            rows.append({"task_id": tid, "style": style, "accuracy": acc, "style_score": sty, "mean": mean})
+            rows.append(
+                {
+                    "task_id": tid,
+                    "style": style,
+                    "accuracy": acc,
+                    "style_score": sty,
+                    "mean": mean,
+                }
+            )
             print(f"{tid:<6} {style:<18} {acc:5.2f} {sty:5.2f}")
 
     global_mean = (acc_sum + sty_sum) / (2 * n) if n else 0
