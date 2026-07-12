@@ -1,10 +1,8 @@
-"""Frames → evidence-locked fact sheet."""
+"""Frames → evidence-locked fact sheet via vision model."""
 
 from __future__ import annotations
 
-import json
-
-from src import llm, video
+from src import config, llm, video
 
 REQUIRED_KEYS = {
     "subjects",
@@ -41,7 +39,13 @@ def _build_messages(frame_paths: list[str]) -> list[dict]:
 
 
 def _validate(sheet: dict) -> bool:
-    return isinstance(sheet, dict) and REQUIRED_KEYS.issubset(sheet.keys())
+    if not isinstance(sheet, dict) or not REQUIRED_KEYS.issubset(sheet.keys()):
+        return False
+    has_subjects = bool(sheet.get("subjects"))
+    has_actions = bool(sheet.get("actions_in_order"))
+    has_setting = bool(str(sheet.get("setting", "")).strip())
+    has_details = bool(sheet.get("notable_details"))
+    return has_subjects or has_actions or has_setting or has_details
 
 
 def ground(frame_paths: list[str]) -> dict:
@@ -49,21 +53,27 @@ def ground(frame_paths: list[str]) -> dict:
     messages = _build_messages(frame_paths)
     result = llm.chat(
         messages,
+        model=config.MODEL_VISION,
         json_mode=True,
         temperature=0.2,
-        max_tokens=1200,
+        max_tokens=1400,
         stage="ground",
+        vision=True,
     )
     if not isinstance(result, dict) or not _validate(result):
         result = llm.chat(
             messages,
+            model=config.MODEL_VISION,
             json_mode=True,
             temperature=0.0,
-            max_tokens=1200,
+            max_tokens=1400,
             stage="ground-retry",
+            vision=True,
         )
     if not isinstance(result, dict):
         raise ValueError("ground returned non-dict")
+    if not _validate(result):
+        raise ValueError("ground fact sheet unusable")
     for key in REQUIRED_KEYS:
-        result.setdefault(key, [] if key != "setting" and key != "camera" else "")
+        result.setdefault(key, [] if key not in ("setting", "camera") else "")
     return result
