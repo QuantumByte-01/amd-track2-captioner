@@ -1,4 +1,4 @@
-"""OpenAI-compatible chat client with retries, fallback, and JSON mode."""
+"""OpenAI-compatible chat client with retries, fallback, and robust JSON."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import requests
 from src import config
 
 _JSON_FENCE_RE = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
+_JSON_OBJ_RE = re.compile(r"\{[\s\S]*\}")
 
 
 def _strip_fences(text: str) -> str:
@@ -20,11 +21,26 @@ def _strip_fences(text: str) -> str:
     return m.group(1).strip() if m else text.strip()
 
 
-def _parse_json(text: str) -> dict | list:
+def _extract_json_object(text: str) -> str:
     cleaned = _strip_fences(text)
-    if not cleaned:
-        raise json.JSONDecodeError("empty content", text, 0)
-    return json.loads(cleaned)
+    if cleaned:
+        try:
+            json.loads(cleaned)
+            return cleaned
+        except json.JSONDecodeError:
+            pass
+    m = _JSON_OBJ_RE.search(text)
+    if not m:
+        raise ValueError("no JSON object in response")
+    return m.group(0)
+
+
+def _parse_json(text: str) -> dict | list:
+    return json.loads(_extract_json_object(text))
+
+
+def _kimi_extra() -> dict:
+    return {}
 
 
 def _repair_json(raw: str, model: str) -> dict | list:
@@ -33,13 +49,17 @@ def _repair_json(raw: str, model: str) -> dict | list:
             "role": "user",
             "content": (
                 "Return the same content as strictly valid JSON, nothing else:\n\n"
-                + raw
+                + raw[:4000]
             ),
         }
     ]
-    result = _post_chat(messages, model=model, json_mode=True, max_tokens=1200, temperature=0.0)
-    if isinstance(result, dict):
-        return result
+    result = _post_chat(
+        messages,
+        model=model,
+        json_mode=False,
+        max_tokens=1600,
+        temperature=0.0,
+    )
     return _parse_json(str(result))
 
 
@@ -50,6 +70,7 @@ def _post_chat(
     max_tokens: int,
     temperature: float,
     timeout: int | None = None,
+    vision: bool = False,
 ) -> dict | str:
     url = f"{config.LLM_BASE_URL.rstrip('/')}/chat/completions"
     headers = {
@@ -91,13 +112,19 @@ def _post_chat(
         resp.raise_for_status()
 
     data = resp.json()
-    content = data["choices"][0]["message"]["content"]
+    choice = data["choices"][0]
+    msg = choice["message"]
+    content = msg.get("content") or msg.get("reasoning_content") or ""
+    finish = choice.get("finish_reason", "")
     if content is None or (isinstance(content, str) and not content.strip()):
+        print(
+            f"[llm] empty content model={model} finish={finish}",
+            file=sys.stderr,
+        )
         raise ValueError("empty model response")
-    print(
-        f"[llm] model={model} latency={latency:.2f}s ok",
-        file=sys.stderr,
-    )
+    if finish == "length":
+        print(f"[llm] truncated model={model} len={len(str(content))}", file=sys.stderr)
+    print(f"[llm] model={model} latency={latency:.2f}s ok", file=sys.stderr)
     return content
 
 
@@ -108,33 +135,20 @@ def chat(
     max_tokens: int = 1200,
     temperature: float = 0.7,
     stage: str = "",
+    vision: bool = False,
 ) -> dict | str:
-    """Send a chat completion request with retries and model fallback."""
-    primary = model or config.MODEL_PRIMARY
-    fallback = config.MODEL_FALLBACK
+    """Send a chat completion with retries, fallback, and JSON recovery."""
+    primary = model or (config.MODEL_VISION if vision else config.MODEL_CAPTION)
+    fallback = config.MODEL_VISION if vision else config.MODEL_FALLBACK
 
-    models_to_try: list[str] = []
-    if config.TRY_GEMMA_FIRST and config.GEMMA_MODEL:
-        models_to_try.append(config.GEMMA_MODEL)
-    models_to_try.append(primary)
+    models_to_try: list[str] = [primary]
     if fallback and fallback != primary:
         models_to_try.append(fallback)
 
     last_err: Exception | None = None
 
-    for idx, current_model in enumerate(models_to_try):
-        retries = 1 if (
-            config.TRY_GEMMA_FIRST
-            and config.GEMMA_MODEL
-            and current_model == config.GEMMA_MODEL
-        ) else config.MAX_RETRIES
-        timeout = 8 if (
-            config.TRY_GEMMA_FIRST
-            and config.GEMMA_MODEL
-            and current_model == config.GEMMA_MODEL
-        ) else config.CALL_TIMEOUT
-
-        for attempt in range(retries + 1):
+    for current_model in models_to_try:
+        for attempt in range(config.MAX_RETRIES + 1):
             try:
                 if stage:
                     print(f"[llm] stage={stage} model={current_model}", file=sys.stderr)
@@ -144,7 +158,7 @@ def chat(
                     json_mode=json_mode,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=timeout,
+                    vision=vision,
                 )
                 if not json_mode:
                     return raw
@@ -152,20 +166,24 @@ def chat(
                     return _parse_json(str(raw))
                 except (json.JSONDecodeError, ValueError):
                     try:
-                        return _repair_json(str(raw), current_model)
-                    except Exception:
-                        if attempt < retries:
-                            time.sleep(1 if attempt == 0 else 2)
-                            continue
+                        raw2 = _post_chat(
+                            messages,
+                            model=current_model,
+                            json_mode=False,
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                            vision=vision,
+                        )
+                        return _parse_json(str(raw2))
+                    except (json.JSONDecodeError, ValueError):
+                        if str(raw).strip():
+                            return _repair_json(str(raw), current_model)
                         raise
             except Exception as e:
                 last_err = e
-                if attempt < retries:
-                    time.sleep(1 if attempt == 0 else 3)
+                if attempt < config.MAX_RETRIES:
+                    time.sleep(1 if attempt == 0 else 2)
                 continue
-
-        if idx == 0 and config.TRY_GEMMA_FIRST and config.GEMMA_MODEL:
-            continue
 
     if last_err:
         raise last_err
@@ -173,7 +191,6 @@ def chat(
 
 
 def load_prompt(name: str) -> str:
-    """Load a prompt file from the prompts directory."""
     import os
 
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
