@@ -1,0 +1,10 @@
+eval/
+.github/
+assets/
+work/
+*.md
+.env
+.git
+.gitignore
+input/
+output/

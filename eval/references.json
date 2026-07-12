@@ -1,0 +1,66 @@
+{
+  "v1": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/1860079-uhd_2560_1440_25fps.mp4",
+    "desc": "Urban autumn boulevard, golden ginkgo trees, city traffic, high-rises",
+    "formal": "A wide urban boulevard lined with golden ginkgo trees in full autumn foliage, with multiple lanes of traffic flowing through the city below high-rise residential buildings.",
+    "sarcastic": "A city that decided trees were a good idea, which is more than most cities can say.",
+    "humorous_tech": "Nature's annual deployment: all leaf nodes updated to yellow simultaneously, no breaking changes reported.",
+    "humorous_non_tech": "The trees got together and decided to put on a show, and honestly they are the only ones putting in any effort."
+  },
+  "v2": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/13825391-uhd_3840_2160_30fps.mp4",
+    "desc": "Orange kitten among green foliage in a garden, looking at camera",
+    "formal": "A young orange tabby kitten sits among dense green foliage in an outdoor setting, looking directly at the camera with an alert and curious expression.",
+    "sarcastic": "A kitten outdoors, clearly plotting something elaborate and fully confident it will succeed.",
+    "humorous_tech": "A small autonomous agent has entered the garden environment and is scanning for input. Next action: unknown. Rollback plan: none.",
+    "humorous_non_tech": "A tiny cat has gone outside and is now judging everything it sees with great authority."
+  },
+  "v3": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/3044693-uhd_3840_2160_24fps.mp4",
+    "desc": "Young woman at desktop computer, bright modern open-plan office",
+    "formal": "A young professional woman is seated at a desktop computer workstation in a bright, modern open-plan office, focused intently on her screen.",
+    "sarcastic": "A person at a computer, apparently working, which is exactly what someone would do if they were not working.",
+    "humorous_tech": "She has been staring at this bug for forty minutes. The bug is a missing comma. The comma is winning.",
+    "humorous_non_tech": "A woman at a computer, visibly handling something extremely important that will be completely forgotten by Thursday."
+  },
+  "v4": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/3121327-uhd_2560_1440_24fps.mp4",
+    "desc": "Mountain landscape, greenery and rocky formations",
+    "formal": "The frame captures a panoramic view of a mountainous landscape characterized by lush greenery and rocky formations.",
+    "sarcastic": "Ah yes, the perfect spot for a picnic... if you enjoy climbing sheer cliffs for snacks.",
+    "humorous_tech": "When your code runs perfectly on the first try, but the mountains still have more layers than your stack trace.",
+    "humorous_non_tech": "When you finally find a hiking trail but realize you forgot the snacks."
+  },
+  "v5": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/5404543-hd_1920_1080_24fps.mp4",
+    "desc": "Ocean waves onto a beach/rocky shore",
+    "formal": "The video frame captures a serene beach scene with gentle waves lapping against the rocky shore.",
+    "sarcastic": "Ah yes, nothing says relaxation like a beach perfectly devoid of any human activity.",
+    "humorous_tech": "When your code runs perfectly in the dev environment but crashes like a wave in production.",
+    "humorous_non_tech": "When you finally hit the beach after a long week, but the ocean waves say 'not today, buddy.'"
+  },
+  "v6": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/2697636-uhd_1920_1440_30fps.mp4",
+    "desc": "Busy city intersection, pedestrians and vehicles",
+    "formal": "The image captures a bustling intersection in Shibuya, Tokyo, featuring a variety of vehicles including trucks and buses navigating the crosswalks.",
+    "sarcastic": "Just another quiet day in the bustling metropolis of... wait, what city is this again?",
+    "humorous_tech": "When you realize your deployment is live and the traffic is more than you expected!",
+    "humorous_non_tech": "When you finally leave the house but forget where you were going."
+  },
+  "v7": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/7963468-uhd_2560_1440_25fps.mp4",
+    "desc": "Person chopping vegetables (zucchini) in a kitchen",
+    "formal": "A person is chopping zucchini into small cubes on a wooden cutting board.",
+    "sarcastic": "Ah yes, the ancient art of chopping zucchini... truly the pinnacle of culinary skills.",
+    "humorous_tech": "When you try to refactor your code but end up with too many slices instead of clean functions.",
+    "humorous_non_tech": "When you realize you actually have to chop the veggies before dinner can happen."
+  },
+  "v8": {
+    "url": "https://storage.googleapis.com/amd-hackathon-clips/8533913-uhd_2560_1440_25fps.mp4",
+    "desc": "Red athletic track, empty spectator seats, outdoor sports facility",
+    "formal": "A red athletic track is prominently displayed in the foreground, featuring multiple lanes marked with white lines and numbers, with rows of white seats behind.",
+    "sarcastic": "Ah yes, nothing quite like a full day of watching grass grow from the best seat in the house.",
+    "humorous_tech": "When you deploy your code, but the only ones cheering are the empty seats.",
+    "humorous_non_tech": "When you show up to the game and realize it's just a practice session."
+  }
+}
