@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Track 2 video captioning orchestrator with watchdog and graceful degradation."""
+"""Track 2 orchestrator: Kimi vision ground + GLM caption write."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from src import caption, config, ground, judge, schema, video
 
 T0 = 0.0
@@ -38,12 +39,12 @@ def _store(task_id: str, result: dict) -> None:
         RESULTS[task_id] = result
 
 
-def _minimal_from_hint(styles: list[str], hint: str = "") -> dict[str, str]:
-    return {s: schema._minimal_caption(s, hint) for s in styles}
+def _minimal_from_hint(styles: list[str], sheet: dict | None = None) -> dict[str, str]:
+    hint = schema.fact_hint(sheet)
+    return {s: schema._minimal_caption(s, hint, sheet) for s in styles}
 
 
 def _direct_captions(frame_paths: list[str], styles: list[str]) -> dict[str, str]:
-    """Ladder rung: one vision call → all styles."""
     from src import llm
 
     system = llm.load_prompt("write.txt")
@@ -51,9 +52,9 @@ def _direct_captions(frame_paths: list[str], styles: list[str]) -> dict[str, str
         {
             "type": "text",
             "text": (
-                "Infer a fact sheet from these frames, then write ONE caption per "
-                f"requested style: {json.dumps(styles)}. Return JSON "
-                '{"formal":"...", ...} with only the requested keys.'
+                "Study these chronological frames. Write ONE caption per style: "
+                f"{json.dumps(styles)}. Use only visible facts. "
+                'Return JSON {"formal":"...", ...} with only requested keys.'
             ),
         }
     ]
@@ -61,9 +62,7 @@ def _direct_captions(frame_paths: list[str], styles: list[str]) -> dict[str, str
         content.append(
             {
                 "type": "image_url",
-                "image_url": {
-                    "url": f"data:image/jpeg;base64,{video.b64(fp)}",
-                },
+                "image_url": {"url": f"data:image/jpeg;base64,{video.b64(fp)}"},
             }
         )
     messages = [
@@ -72,10 +71,12 @@ def _direct_captions(frame_paths: list[str], styles: list[str]) -> dict[str, str
     ]
     result = llm.chat(
         messages,
+        model=config.MODEL_VISION,
         json_mode=True,
-        temperature=0.7,
-        max_tokens=1200,
+        temperature=0.5,
+        max_tokens=1400,
         stage="direct",
+        vision=True,
     )
     out: dict[str, str] = {}
     if isinstance(result, dict):
@@ -85,76 +86,72 @@ def _direct_captions(frame_paths: list[str], styles: list[str]) -> dict[str, str
                 val = val[0]
             if isinstance(val, str) and val.strip():
                 out[style] = val.strip()
-    for style in styles:
-        if style not in out:
-            out[style] = schema._minimal_caption(style)
-    return out
+    if len(out) >= len(styles) // 2:
+        for style in styles:
+            if style not in out:
+                out[style] = schema._minimal_caption(style, schema.fact_hint(None), None)
+        return out
+    raise ValueError("direct captions incomplete")
 
 
 def process_clip(task: dict, video_path: str | None) -> dict:
-    """Process one clip through the pipeline with degradation ladder."""
     task_id = task["task_id"]
+    clip_t0 = time.monotonic()
     styles = [s for s in task.get("styles", config.STYLE_ORDER) if s in config.VALID_STYLES]
     if not styles:
         styles = list(config.STYLE_ORDER)
+
+    def clip_expired() -> bool:
+        return (time.monotonic() - clip_t0) >= config.PER_CLIP_BUDGET_SEC
 
     frame_dir = f"/tmp/frames/{task_id}"
     fact_sheet: dict | None = None
     frame_paths: list[str] = []
 
     try:
-        if past_soft_deadline():
-            raise TimeoutError("soft deadline reached")
-
         if video_path and os.path.exists(video_path):
             frame_paths = video.extract_frames(video_path, frame_dir)
         else:
             frame_paths = video.fetch_frames_direct(task["video_url"], frame_dir)
-
         if not frame_paths:
             raise RuntimeError("no frames extracted")
 
-        fact_sheet = ground.ground(frame_paths)
-        candidates = caption.generate(fact_sheet, styles)
-        best = judge.pick_best(fact_sheet, candidates, styles)
-        return {"task_id": task_id, "captions": best}
+        if not clip_expired() and not past_soft_deadline():
+            fact_sheet = ground.ground(frame_paths)
+            candidates = caption.generate(fact_sheet, styles)
+            best = judge.pick_best(fact_sheet, candidates, styles)
+            return {"task_id": task_id, "captions": best}
 
     except Exception as e1:
         print(f"[clip] {task_id} full pipeline failed: {e1}", file=sys.stderr)
 
-        if fact_sheet and not past_soft_deadline():
-            try:
-                candidates = caption.generate(fact_sheet, styles, k=1)
-                best = {
-                    s: (candidates.get(s) or [schema._minimal_caption(s)])[0]
-                    for s in styles
-                }
-                return {"task_id": task_id, "captions": best}
-            except Exception as e2:
-                print(f"[clip] {task_id} write-only fallback failed: {e2}", file=sys.stderr)
+    if fact_sheet and not clip_expired():
+        try:
+            candidates = caption.generate(fact_sheet, styles, k=1)
+            best = {
+                s: (candidates.get(s) or [_minimal_from_hint([s], fact_sheet)[s]])[0]
+                for s in styles
+            }
+            return {"task_id": task_id, "captions": best}
+        except Exception as e2:
+            print(f"[clip] {task_id} write-only failed: {e2}", file=sys.stderr)
 
     try:
-        if past_soft_deadline():
-            raise TimeoutError("soft deadline reached")
         if not frame_paths:
             if video_path and os.path.exists(video_path):
                 frame_paths = video.extract_frames(video_path, frame_dir)
             else:
                 frame_paths = video.fetch_frames_direct(task["video_url"], frame_dir)
-        if frame_paths:
+        if frame_paths and not clip_expired():
             best = _direct_captions(frame_paths, styles)
             return {"task_id": task_id, "captions": best}
     except Exception as e3:
-        print(f"[clip] {task_id} direct fallback failed: {e3}", file=sys.stderr)
+        print(f"[clip] {task_id} direct failed: {e3}", file=sys.stderr)
 
-    hint = ""
-    if isinstance(fact_sheet, dict):
-        hint = str(fact_sheet.get("setting", ""))
-    return {"task_id": task_id, "captions": _minimal_from_hint(styles, hint)}
+    return {"task_id": task_id, "captions": _minimal_from_hint(styles, fact_sheet)}
 
 
 def _work(task: dict) -> None:
-    """Download then process one clip (overlapped across workers)."""
     tid = task["task_id"]
     dest = os.path.join(CLIPS_DIR, f"{tid}.mp4")
     path = None
@@ -164,12 +161,10 @@ def _work(task: dict) -> None:
         path = dest
     except Exception as e:
         print(f"[dl] {tid} failed: {e}", file=sys.stderr)
-    result = process_clip(task, path)
-    _store(tid, result)
+    _store(tid, process_clip(task, path))
 
 
 def finalize_and_write(tasks: list[dict]) -> bool:
-    """Fill gaps, validate, and atomically write results.json."""
     ordered: list[dict | None] = []
     for task in tasks:
         tid = task["task_id"]
@@ -177,14 +172,10 @@ def finalize_and_write(tasks: list[dict]) -> bool:
             entry = RESULTS.get(tid)
         if entry is None:
             styles = [s for s in task.get("styles", config.STYLE_ORDER) if s in config.VALID_STYLES]
-            entry = {
-                "task_id": tid,
-                "captions": _minimal_from_hint(styles or list(config.STYLE_ORDER)),
-            }
+            entry = {"task_id": tid, "captions": _minimal_from_hint(styles or list(config.STYLE_ORDER))}
         ordered.append(entry)
 
     repaired = schema.validate_and_repair(ordered, tasks)
-
     out_dir = os.path.dirname(config.OUTPUT_PATH) or "/output"
     os.makedirs(out_dir, exist_ok=True)
     tmp_path = config.OUTPUT_PATH + ".tmp"
@@ -199,7 +190,6 @@ def main() -> None:
     global T0
     T0 = time.monotonic()
     tasks = _load_tasks()
-
     for task in tasks:
         with RESULTS_LOCK:
             RESULTS[task["task_id"]] = None
@@ -213,7 +203,6 @@ def main() -> None:
                     fut.result()
                 except Exception as e:
                     print(f"[clip] worker error: {e}", file=sys.stderr)
-
     finally:
         wrote = finalize_and_write(tasks)
 
