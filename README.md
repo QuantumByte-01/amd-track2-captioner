@@ -1,89 +1,138 @@
-# AMD Track 2 — Video Captioning Agent
+# StyleCap — Grounded Multi-Style Video Captioning
 
-Containerized video captioning agent for **AMD Developer Hackathon ACT II, Track 2**.
+**AMD Developer Hackathon ACT II · Track 2**  
+Containerized agent that watches short video clips and writes **four grounded caption styles** (formal, sarcastic, humorous-tech, humorous-non-tech).
 
-## Architecture
+| | |
+|---|---|
+| **Team** | QuantumByte-01 |
+| **GitHub** | [quantibyte](https://github.com/QuantumByte-01) |
+| **Contact** | swastik.r.900@gmail.com |
 
-> **Gemma on AMD:** The identical pipeline runs **Gemma-3-12B end-to-end** (grounding,
-> styling, judging) on **AMD Instinct MI300X** via ROCm + vLLM. The leaderboard Docker
-> image uses serverless Kimi K2.6 + GLM 5.2 for post-deadline grader availability.
+---
 
-```
-tasks.json → parallel downloads → per clip (4 workers):
-  ffmpeg uniform-seek frames (8 @ 768px)
-    → GROUND: 1 vision call → strict JSON fact sheet
-    → WRITE:  1 call → 2 candidates × each requested style
-    → JUDGE:  1 call per style → picks best candidate
-  → watchdog flush at T+8min → /output/results.json
-```
+## Submission links (lablab Step 3)
 
-**Graded path (leaderboard):** Fireworks serverless `kimi-k2p6` (vision-capable; Qwen3-VL is on-demand-only on Fireworks as of May 2026).
+Copy these into the hackathon form:
 
-**Gemma path (demo / Best Use of Gemma):** Same pipeline via pod vLLM serving `google/gemma-3-12b-it` on AMD MI300X — switch with env vars below. The graded container intentionally uses serverless Qwen3-VL because Fireworks Gemma is on-demand-only and won't be deployed during post-deadline re-scoring.
+| Field | Value |
+|-------|-------|
+| **GitHub Repository** | https://github.com/QuantumByte-01/amd-track2-captioner |
+| **Demo Application Platform** | GitHub |
+| **Demo Application URL** | https://github.com/QuantumByte-01/amd-track2-captioner#quick-start |
+| **Docker Image** | `ghcr.io/quantumbyte-01/amd-track2-captioner:v40` |
 
-## Quick start
+Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest` (same digest as latest `v<N>` build).
+
+**Slides:** [StyleCap_Slides.pdf](StyleCap_Slides.pdf)  
+**Gemma on AMD MI300X evidence:** [GEMMA_RESULTS.md](GEMMA_RESULTS.md) · [samples/gemma_results.json](samples/gemma_results.json)
+
+---
+
+## What it does
+
+1. **Download** clips in parallel (6 workers)
+2. **Sample** 6 frames per clip with ffmpeg (uniform seek, 768px)
+3. **Ground** — vision model extracts a strict JSON fact sheet (anti-hallucination)
+4. **Write** — text model batches 2 candidates per requested style
+5. **Judge** — one batched call picks the best caption per style
+6. **Repair** — length policy, schema validation, degradation ladder → always valid `results.json`
+
+![Pipeline architecture](assets/architecture.png)
+
+---
+
+## Quick start (graded Docker image)
 
 ```bash
-# Build (supply API key at build time — baked into image per Track 2 rules)
-docker build --build-arg FIREWORKS_API_KEY=$FIREWORKS_API_KEY -t amd-track2-captioner .
+docker pull ghcr.io/quantumbyte-01/amd-track2-captioner:v40
 
-# Run
 mkdir -p input output
-cp work/input/tasks.json input/tasks.json   # or your own tasks.json
-docker run --rm -v $PWD/input:/input -v $PWD/output:/output amd-track2-captioner
+# tasks.json: list of {task_id, video_url, styles[]}
+docker run --rm \
+  -v "$PWD/input:/input" \
+  -v "$PWD/output:/output" \
+  ghcr.io/quantumbyte-01/amd-track2-captioner:v40
+
 cat output/results.json
 ```
 
-## Input / Output contract
-
 **Input** (`/input/tasks.json`):
+
 ```json
-[{"task_id": "v1", "video_url": "https://...", "styles": ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]}]
+[
+  {
+    "task_id": "v1",
+    "video_url": "https://storage.googleapis.com/amd-hackathon-clips/1860079-uhd_2560_1440_25fps.mp4",
+    "styles": ["formal", "sarcastic", "humorous_tech", "humorous_non_tech"]
+  }
+]
 ```
 
 **Output** (`/output/results.json`):
+
 ```json
-[{"task_id": "v1", "captions": {"formal": "...", "sarcastic": "...", "humorous_tech": "...", "humorous_non_tech": "..."}}]
+[
+  {
+    "task_id": "v1",
+    "captions": {
+      "formal": "...",
+      "sarcastic": "...",
+      "humorous_tech": "...",
+      "humorous_non_tech": "..."
+    }
+  }
+]
 ```
 
-## Environment profiles
+---
 
-| Variable | Graded default | Pod / Gemma dev |
-|---|---|---|
-| `LLM_BASE_URL` | `https://api.fireworks.ai/inference/v1` | `http://localhost:8000/v1` |
-| `MODEL_PRIMARY` | `accounts/fireworks/models/kimi-k2p6` | `google/gemma-3-12b-it` |
-| `MODEL_FALLBACK` | `accounts/fireworks/models/kimi-k2p6` | same as primary |
-| `FIREWORKS_API_KEY` | baked at build | `dummy` for local vLLM |
+## Models
+
+### Leaderboard path (Docker / Fireworks serverless)
+
+| Role | Model |
+|------|-------|
+| Vision / ground | `accounts/fireworks/models/kimi-k2p6` |
+| Caption / judge | `accounts/fireworks/models/glm-5p2` |
+| API | `https://api.fireworks.ai/inference/v1` |
+
+`FIREWORKS_API_KEY` is baked at image build time (Track 2 rules). GHCR package is **public**.
+
+### Gemma path (AMD MI300X partner demo)
+
+The **same pipeline** runs end-to-end on `google/gemma-3-12b-it` via vLLM + ROCm on AMD Instinct MI300X — ground, write, and judge. See [GEMMA_RESULTS.md](GEMMA_RESULTS.md) for timings (8 clips in **86s**) and sample output.
 
 ```bash
-# Gemma on MI300X (vLLM must be running)
 export LLM_BASE_URL=http://localhost:8000/v1
-export MODEL_PRIMARY=google/gemma-3-12b-it
+export MODEL_VISION=google/gemma-3-12b-it
+export MODEL_CAPTION=google/gemma-3-12b-it
 export MODEL_FALLBACK=google/gemma-3-12b-it
 export FIREWORKS_API_KEY=dummy
 python run.py
 ```
 
-## Local evaluation
+---
+
+## Local development
 
 ```bash
 pip install -r requirements.txt
-# set FIREWORKS_API_KEY or Gemma profile above
-python eval/eval.py
+export FIREWORKS_API_KEY=your_key
+python eval/eval.py          # score against reference captions
 ```
 
-Scores 8 public validation clips against reference captions (directional self-judge).
-
-## CI / submission image
-
-Push to `main` → GitHub Actions builds `linux/amd64` and pushes:
+## Project structure
 
 ```
-ghcr.io/<OWNER>/amd-track2-captioner:v<N>
+run.py              # orchestrator + degradation ladder
+src/                # config, llm, video, ground, caption, judge, schema
+prompts/            # ground, write, judge prompts
+eval/               # local eval harness + reference captions
+samples/            # Gemma run output (8 public clips)
+Dockerfile          # linux/amd64 submission image
 ```
-
-Set repo secret `FIREWORKS_API_KEY`. Make the GHCR package **public** before submitting.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
