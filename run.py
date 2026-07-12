@@ -11,7 +11,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src import caption, config, ground, judge, schema, video
 
-T0 = time.monotonic()
+T0 = 0.0
 RESULTS: dict[str, dict | None] = {}
 RESULTS_LOCK = threading.Lock()
 CLIPS_DIR = "/tmp/clips"
@@ -153,28 +153,19 @@ def process_clip(task: dict, video_path: str | None) -> dict:
     return {"task_id": task_id, "captions": _minimal_from_hint(styles, hint)}
 
 
-def download_all(tasks: list[dict]) -> dict[str, str]:
-    """Download all clips in parallel; return task_id → path map."""
-    os.makedirs(CLIPS_DIR, exist_ok=True)
-    paths: dict[str, str] = {}
-
-    def _dl(task: dict) -> tuple[str, str | None]:
-        task_id = task["task_id"]
-        dest = os.path.join(CLIPS_DIR, f"{task_id}.mp4")
-        try:
-            video.download(task["video_url"], dest)
-            return task_id, dest
-        except Exception as e:
-            print(f"[dl] {task_id} failed: {e}", file=sys.stderr)
-            return task_id, None
-
-    with ThreadPoolExecutor(max_workers=config.DL_WORKERS) as pool:
-        futures = {pool.submit(_dl, t): t["task_id"] for t in tasks}
-        for fut in as_completed(futures):
-            tid, path = fut.result()
-            if path:
-                paths[tid] = path
-    return paths
+def _work(task: dict) -> None:
+    """Download then process one clip (overlapped across workers)."""
+    tid = task["task_id"]
+    dest = os.path.join(CLIPS_DIR, f"{tid}.mp4")
+    path = None
+    try:
+        os.makedirs(CLIPS_DIR, exist_ok=True)
+        video.download(task["video_url"], dest)
+        path = dest
+    except Exception as e:
+        print(f"[dl] {tid} failed: {e}", file=sys.stderr)
+    result = process_clip(task, path)
+    _store(tid, result)
 
 
 def finalize_and_write(tasks: list[dict]) -> bool:
@@ -215,13 +206,6 @@ def main() -> None:
 
     wrote = False
     try:
-        paths = download_all(tasks)
-
-        def _work(task: dict) -> None:
-            tid = task["task_id"]
-            result = process_clip(task, paths.get(tid))
-            _store(tid, result)
-
         with ThreadPoolExecutor(max_workers=config.CLIP_WORKERS) as pool:
             futures = [pool.submit(_work, t) for t in tasks]
             for fut in as_completed(futures):
