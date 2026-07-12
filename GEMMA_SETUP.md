@@ -14,15 +14,19 @@ GPU[0]: VRAM Total 51522830336 (~48 GiB), Used 28028928 (idle)
 vLLM log (`/workspace/vllm.log`):
 
 ```
-huggingface_hub.errors.GatedRepoError: 401 Unauthorized
-Cannot access gated repo google/gemma-3-12b-it
+403 Forbidden: Please enable access to public gated repositories in your
+fine-grained token settings to view this repository.
 ```
 
-## Fix (you, ~2 min)
+Token is set but lacks **gated-repo read** permission (and license must be accepted).
 
-1. Laptop: https://huggingface.co/google/gemma-3-12b-it → accept license
-2. Create read token: HuggingFace Settings → Access Tokens
-3. On pod:
+## Fix (you, ~3 min)
+
+1. Laptop: https://huggingface.co/google/gemma-3-12b-it → **Accept license**
+2. HuggingFace → **Settings → Access Tokens**:
+   - Edit token → enable **Read access to contents of all public gated repos**, OR
+   - Create a new **classic Read** token (`read` scope — simpler)
+3. On pod, export the fixed token and relaunch:
 
 ```bash
 export HF_TOKEN=hf_xxxxxxxx
