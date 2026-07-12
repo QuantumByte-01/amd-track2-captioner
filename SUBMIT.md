@@ -1,12 +1,17 @@
-# lablab.ai Track 2 Submission — Copy/Paste Ready
+# lablab.ai Track 2 Submission — Copy/Paste Ready (verified 2026-07-12)
 
-## Docker image (after Actions build completes)
+## Docker image (latest green build)
 
 ```
-ghcr.io/QuantumByte-01/amd-track2-captioner:v1
+ghcr.io/quantumbyte-01/amd-track2-captioner:v34
 ```
 
-Replace `v1` with the actual run number from GitHub Actions (e.g. `v2`, `v3`).
+- **Latest Actions build:** #34 — success (commit `de5634f`)
+- **Also tagged:** `ghcr.io/quantumbyte-01/amd-track2-captioner:latest` (same digest as v34)
+- **Verify on your laptop:** `docker pull ghcr.io/quantumbyte-01/amd-track2-captioner:v34`
+- **After pasting workflow:** build #35+ adds API-key guard + smoke test — update submission to `v35` when green
+
+> Use **lowercase** `quantumbyte-01` only. GHCR package must stay **Public**.
 
 ## GitHub repo
 
@@ -14,34 +19,48 @@ Replace `v1` with the actual run number from GitHub Actions (e.g. `v2`, `v3`).
 https://github.com/QuantumByte-01/amd-track2-captioner
 ```
 
+## Hackathon page
+
+```
+https://lablab.ai/ai-hackathons/amd-developer-hackathon-act-ii
+```
+
 ## Suggested form fields
 
 **Title:** StyleCap — Grounded Multi-Style Video Captioning
 
-**Short description:** A containerized video captioning agent that generates formal, sarcastic, humorous-tech, and humorous-non-tech captions using evidence-locked fact sheets and Fireworks Kimi K2.6 vision API. Gemma-on-AMD MI300X path documented for partner prize.
+**Short description:** Containerized video captioning agent: Kimi K2.6 vision fact sheets → GLM 5.2 styled captions (formal, sarcastic, humorous-tech, humorous-non-tech). Identical pipeline runs Gemma-3-12B end-to-end on AMD MI300X via ROCm/vLLM.
 
-**Long description:** Two-phase anti-hallucination pipeline: (1) uniform ffmpeg frame sampling → vision model extracts strict JSON fact sheet; (2) text model styles captions from facts only. Graceful degradation ladder, 8-minute watchdog, guaranteed schema-valid output. Graded path uses Fireworks serverless Kimi K2.6; Gemma-3-12B on AMD MI300X via vLLM for partner demo.
+**Long description:** Two-phase anti-hallucination pipeline: (1) ffmpeg uniform-seek frames → vision model extracts strict JSON fact sheet; (2) text model styles captions from facts only, batched judge picks best candidate. Graceful degradation ladder, 9-minute soft deadline, guaranteed schema-valid output. **Graded Docker image:** serverless Kimi K2.6 + GLM 5.2 (Fireworks, key baked in). **Partner demo:** Gemma-3-12B on AMD Instinct MI300X — 8 public clips in 86s (see GEMMA_RESULTS.md).
 
 **Tags:** Gemma, AMD ROCm, AMD Developer Cloud, Fireworks AI
 
 **Application URL:** https://github.com/QuantumByte-01/amd-track2-captioner
 
-## One remaining CI step (if build not started)
+**Package page (public check):** https://github.com/QuantumByte-01/amd-track2-captioner/pkgs/container/amd-track2-captioner
 
-Your PAT cannot push `.github/workflows/` files. In the GitHub web UI:
+## Models (graded container)
 
-1. Repo → **Add file → Create new file**
-2. Path: `.github/workflows/build.yml`
-3. Copy contents from `COPY_ME_TO_dot_github_workflows_build.yml` in this repo
-4. Commit to `main`
+| Role | Model |
+|------|-------|
+| Vision / ground | `accounts/fireworks/models/kimi-k2p6` |
+| Caption / judge | `accounts/fireworks/models/glm-5p2` |
+| API | `https://api.fireworks.ai/inference/v1` |
 
-Secret `FIREWORKS_API_KEY` is already set — build starts automatically.
+## Models (Gemma demo on pod)
 
-## After build
+| Role | Model |
+|------|-------|
+| All stages | `google/gemma-3-12b-it` via vLLM `http://localhost:8000/v1` |
 
-1. GitHub → **Packages** → `amd-track2-captioner` → **Public**
-2. Verify: `docker pull ghcr.io/QuantumByte-01/amd-track2-captioner:v1`
-3. Submit image tag on lablab Track 2 form
+## Evidence files in repo
+
+- `GEMMA_RESULTS.md` — MI300X run timings + sample captions
+- `work/gemma_results.json` — 8-clip Gemma output
+
+## Workflow (optional — proves baked key)
+
+Paste `COPY_ME_TO_dot_github_workflows_build.yml` → `.github/workflows/build.yml` in GitHub browser (PAT cannot push workflows).
 
 ## Deadline
 
