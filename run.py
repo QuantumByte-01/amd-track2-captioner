@@ -142,7 +142,7 @@ def process_clip(task: dict, video_path: str | None) -> dict:
                 frame_paths = video.extract_frames(video_path, frame_dir)
             else:
                 frame_paths = video.fetch_frames_direct(task["video_url"], frame_dir)
-        if frame_paths and not clip_expired():
+        if frame_paths:
             best = _direct_captions(frame_paths, styles)
             return {"task_id": task_id, "captions": best}
     except Exception as e3:
