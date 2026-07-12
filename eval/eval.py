@@ -58,6 +58,21 @@ def _parse_eval_scores(raw: object) -> tuple[float, float]:
     return 0.0, 0.0
 
 
+def _reference_fact_sheet(ref: dict) -> dict:
+    """Approximate fact sheet for local scoring (pipeline fact sheets not persisted)."""
+    formal = ref.get("formal", "")
+    desc = ref.get("desc", "")
+    return {
+        "setting": desc,
+        "subjects": [s.strip() for s in desc.split(",") if s.strip()],
+        "actions_in_order": [],
+        "camera": "",
+        "on_screen_text": [],
+        "notable_details": [desc, formal],
+        "uncertain": [],
+    }
+
+
 def score_caption(
     fact_sheet: dict,
     style: str,
@@ -69,33 +84,25 @@ def score_caption(
         f"STYLE: {style}\n"
         f"DEFINITION: {config.STYLE_DEFINITIONS[style]}\n\n"
         f"REFERENCE (tone anchor, not ground truth):\n{reference}\n\n"
-        f"CAPTION TO SCORE:\n{caption_text}"
+        f"CAPTION TO SCORE:\n{caption_text}\n\n"
+        'Reply with ONLY valid JSON like {"accuracy":0.8,"style":0.9} — no other text.'
     )
     messages = [
         {"role": "system", "content": _EVAL_JUDGE_SYSTEM},
         {"role": "user", "content": user},
     ]
     try:
-        result = llm.chat(
+        raw = llm.chat(
             messages,
-            model=config.MODEL_CAPTION,
-            json_mode=True,
-            temperature=0.0,
-            max_tokens=200,
-            stage=f"eval-{style}",
-        )
-        acc, sty = _parse_eval_scores(result)
-        if acc or sty:
-            return acc, sty
-        result2 = llm.chat(
-            messages,
-            model=config.MODEL_CAPTION,
+            model=config.MODEL_FALLBACK or config.MODEL_CAPTION,
             json_mode=False,
             temperature=0.0,
-            max_tokens=200,
-            stage=f"eval-{style}-text",
+            max_tokens=80,
+            stage=f"eval-{style}",
         )
-        return _parse_eval_scores(result2)
+        acc, sty = _parse_eval_scores(raw)
+        if acc or sty:
+            return acc, sty
     except Exception as e:
         print(f"eval judge failed ({style}): {e}", file=sys.stderr)
     return 0.0, 0.0
@@ -148,15 +155,7 @@ def main() -> None:
         for style in STYLES:
             cap = captions.get(style, "")
             acc, sty = score_caption(
-                {
-                    "setting": ref["desc"],
-                    "subjects": [],
-                    "actions_in_order": [],
-                    "camera": "",
-                    "on_screen_text": [],
-                    "notable_details": [],
-                    "uncertain": [],
-                },
+                _reference_fact_sheet(ref),
                 style,
                 cap,
                 ref[style],
