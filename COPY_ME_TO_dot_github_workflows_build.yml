@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify FIREWORKS_API_KEY secret is set
+        run: |
+          if [ -z "${{ secrets.FIREWORKS_API_KEY }}" ]; then
+            echo "::error::FIREWORKS_API_KEY secret is empty — refusing to bake a broken image"
+            exit 1
+          fi
+          echo "FIREWORKS_API_KEY is set (length hidden)"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -17,6 +24,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
+        id: build
         with:
           context: .
           platforms: linux/amd64
@@ -24,5 +32,26 @@ jobs:
           build-args: |
             FIREWORKS_API_KEY=${{ secrets.FIREWORKS_API_KEY }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/amd-track2-captioner:latest
-            ghcr.io/${{ github.repository_owner }}/amd-track2-captioner:v${{ github.run_number }}
+            ghcr.io/quantumbyte-01/amd-track2-captioner:latest
+            ghcr.io/quantumbyte-01/amd-track2-captioner:v${{ github.run_number }}
+      - name: Smoke test — prove baked API key works
+        run: |
+          IMAGE="ghcr.io/quantumbyte-01/amd-track2-captioner:v${{ github.run_number }}"
+          mkdir -p input output
+          cat > input/tasks.json <<'EOF'
+          [{"task_id":"smoke","video_url":"https://storage.googleapis.com/amd-hackathon-clips/13825391-uhd_3840_2160_30fps.mp4","styles":["formal","sarcastic"]}]
+          EOF
+          docker run --rm -v "$PWD/input:/input" -v "$PWD/output:/output" "$IMAGE"
+          python3 <<'PY'
+          import json, sys
+          data = json.load(open("output/results.json"))
+          cap = data[0]["captions"]["formal"]
+          bad = ["short video scene", "footage shows a short", "riveting cinema"]
+          if any(b in cap.lower() for b in bad):
+              print("FAIL: ladder-bottom caption detected:", cap)
+              sys.exit(1)
+          if len(cap) < 40:
+              print("FAIL: caption too short:", cap)
+              sys.exit(1)
+          print("PASS:", cap[:100])
+          PY
