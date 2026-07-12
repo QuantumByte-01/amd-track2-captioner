@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -15,6 +16,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src import config, llm  # noqa: E402
+
+_EVAL_MODEL = "accounts/fireworks/routers/glm-5p2-fast"
+_SCORE_RE = re.compile(
+    r'"accuracy"\s*:\s*([\d.]+).*?"style"\s*:\s*([\d.]+)',
+    re.IGNORECASE | re.DOTALL,
+)
 
 STYLES = config.STYLE_ORDER
 
@@ -49,12 +56,23 @@ def _parse_eval_scores(raw: object) -> tuple[float, float]:
             s = raw["scores"][0]
             if isinstance(s, dict):
                 return float(s.get("accuracy", 0)), float(s.get("style", 0))
-    if isinstance(raw, str):
+    text = str(raw)
+    m = _SCORE_RE.search(text)
+    if m:
+        return float(m.group(1)), float(m.group(2))
+    for mobj in reversed(list(re.finditer(r"\{[^{}]*\}", text))):
         try:
-            parsed = json.loads(llm._extract_json_object(raw))
-            return _parse_eval_scores(parsed)
-        except (json.JSONDecodeError, ValueError):
-            pass
+            parsed = json.loads(mobj.group(0))
+            acc, sty = _parse_eval_scores(parsed)
+            if acc or sty:
+                return acc, sty
+        except json.JSONDecodeError:
+            continue
+    try:
+        parsed = json.loads(llm._extract_json_object(text))
+        return _parse_eval_scores(parsed)
+    except (json.JSONDecodeError, ValueError):
+        pass
     return 0.0, 0.0
 
 
@@ -80,12 +98,11 @@ def score_caption(
     reference: str,
 ) -> tuple[float, float]:
     user = (
-        f"FACT SHEET:\n{json.dumps(fact_sheet, ensure_ascii=False)}\n\n"
-        f"STYLE: {style}\n"
-        f"DEFINITION: {config.STYLE_DEFINITIONS[style]}\n\n"
-        f"REFERENCE (tone anchor, not ground truth):\n{reference}\n\n"
-        f"CAPTION TO SCORE:\n{caption_text}\n\n"
-        'Reply with ONLY valid JSON like {"accuracy":0.8,"style":0.9} — no other text.'
+        f"STYLE: {style} ({config.STYLE_DEFINITIONS[style]})\n"
+        f"FACT HINT: {fact_sheet.get('setting', '')}\n"
+        f"REFERENCE TONE:\n{reference}\n\n"
+        f"CAPTION:\n{caption_text}\n\n"
+        "Return only JSON: {\"accuracy\":0.0,\"style\":0.0}"
     )
     messages = [
         {"role": "system", "content": _EVAL_JUDGE_SYSTEM},
@@ -94,10 +111,10 @@ def score_caption(
     try:
         raw = llm.chat(
             messages,
-            model=config.MODEL_FALLBACK or config.MODEL_CAPTION,
+            model=_EVAL_MODEL,
             json_mode=False,
             temperature=0.0,
-            max_tokens=80,
+            max_tokens=2000,
             stage=f"eval-{style}",
         )
         acc, sty = _parse_eval_scores(raw)
