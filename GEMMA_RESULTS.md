@@ -30,8 +30,8 @@ Smoke test: `curl localhost:8000/v1/chat/completions` → `"OK!"`
 
 | Metric | Value |
 |--------|-------|
-| Input | `work/input/tasks.json` (8 public validation clips) |
-| Output | `work/gemma_results.json` |
+| Input | `eval/references.json` task list (8 public validation clips) |
+| Output | [samples/gemma_results.json](samples/gemma_results.json) |
 | Wall clock | **86 s** |
 | Models | `MODEL_VISION`, `MODEL_CAPTION`, `MODEL_FALLBACK` = `google/gemma-3-12b-it` |
 

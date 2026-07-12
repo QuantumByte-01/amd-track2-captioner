@@ -4,5 +4,7 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ipynb_checkpoints/
 input/
 output/
+scripts/
