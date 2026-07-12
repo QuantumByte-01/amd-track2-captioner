@@ -61,7 +61,7 @@ def _finalize_caption(text: str, style: str) -> str:
     text = _clean_caption(text)
     if not text:
         return text
-    if _fits_limit(text):
+    if _fits_limit(text, style):
         if text[-1] not in ".!?":
             text += "."
         return text
@@ -155,7 +155,7 @@ def _write_one_style(fact_sheet: dict, style: str, temperature: float = 0.5) -> 
 
 
 def _regenerate_if_bad(fact_sheet: dict, style: str, caption: str) -> str:
-    if _fits_limit(caption) and caption.rstrip()[-1] in ".!?":
+    if _fits_limit(caption, style) and caption.rstrip()[-1] in ".!?":
         return caption
     try:
         return _write_one_style(fact_sheet, style, temperature=0.25)
