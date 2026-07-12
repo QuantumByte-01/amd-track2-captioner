@@ -24,7 +24,7 @@ INPUT_PATH = os.environ.get("INPUT_PATH", "/input/tasks.json")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/output/results.json")
 
 FRAMES_PER_CLIP = int(os.environ.get("FRAMES_PER_CLIP", "4"))
-CANDIDATES = int(os.environ.get("CANDIDATES", "1"))
+CANDIDATES = int(os.environ.get("CANDIDATES", "2"))
 CLIP_WORKERS = int(os.environ.get("CLIP_WORKERS", "6"))
 DL_WORKERS = int(os.environ.get("DL_WORKERS", "6"))
 CALL_TIMEOUT = int(os.environ.get("CALL_TIMEOUT", "90"))
