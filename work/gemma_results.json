@@ -1,0 +1,74 @@
+[
+  {
+    "task_id": "v1",
+    "captions": {
+      "formal": "This urban street showcases multiple lanes of traffic, including cars, buses, and motorcycles, all moving right, alongside tall gray and white apartment buildings and trees displaying yellow leaves.",
+      "sarcastic": "Ah yes, a perfectly organized urban commute, where everything moves in the same direction, eventually.",
+      "humorous_tech": "When you finally refactor your codebase and everything still runs on the same multiple lanes of traffic.",
+      "humorous_non_tech": "When you finally think you’ve mastered parallel parking, but then you see the traffic."
+    }
+  },
+  {
+    "task_id": "v2",
+    "captions": {
+      "formal": "Bright sunlight illuminates the dirt ground with scattered shadows, showcasing brown tree trunks with textured bark as an orange tabby kitten walks forward.",
+      "sarcastic": "Ah yes, another cat gracefully navigating the wilderness – as if that's a common occurrence.",
+      "humorous_tech": "When you refactor your codebase and the kitten still manages to walk forward six times in a row.",
+      "humorous_non_tech": "When you finally think you’ve captured the perfect nature shot, but a kitten walks in front."
+    }
+  },
+  {
+    "task_id": "v3",
+    "captions": {
+      "formal": "The video depicts a woman in a light beige jacket and orange top working at a white desk in a modern office space.",
+      "sarcastic": "Ah yes, the pinnacle of modern office life: staring at a screen and pretending to be productive.",
+      "humorous_tech": "When you refactor your workspace, adding a white desk and plant, hoping for zero latency on productivity.",
+      "humorous_non_tech": "When you finally get your workspace organized, but then you have to actually work."
+    }
+  },
+  {
+    "task_id": "v4",
+    "captions": {
+      "formal": "This aerial view showcases a mountainous landscape featuring gray rock formations and dense green vegetation under a hazy sky, with a distant city visible.",
+      "sarcastic": "Ah yes, a mountain range and a city—because we needed *more* places to escape to.",
+      "humorous_tech": "When you finally deploy a scenic view, but the hazy sky introduces unexpected latency.",
+      "humorous_non_tech": "When you finally reach the summit and realize you left your phone in the car."
+    }
+  },
+  {
+    "task_id": "v5",
+    "captions": {
+      "formal": "A static shot showcases a pebble beach with gray pebbles, bordered by a steep, dark gray cliff face covered in bright green vegetation, as white foam-capped waves approach and recede.",
+      "sarcastic": "Ah yes, a beach – perfect for anyone who enjoys dodging rogue waves and gritty sand.",
+      "humorous_tech": "When you finally deploy your ocean-simulating code, and the waves still look better in real life.",
+      "humorous_non_tech": "When you finally find a beach, and it's mostly just rocks."
+    }
+  },
+  {
+    "task_id": "v6",
+    "captions": {
+      "formal": "This static frame depicts a busy urban intersection featuring multiple lanes of traffic, white and black pedestrian crosswalks, and tall glass and steel buildings.",
+      "sarcastic": "Ah yes, a perfectly organized intersection where chaos reigns supreme.",
+      "humorous_tech": "When you refactor the intersection’s traffic flow, but the pedestrians still don't read the traffic lights.",
+      "humorous_non_tech": "When you finally think you’ve mastered navigating a busy city intersection."
+    }
+  },
+  {
+    "task_id": "v7",
+    "captions": {
+      "formal": "A light-colored apron with thin gray stripes is worn as hands hold a silver knife, chopping green zucchini onto a wooden cutting board.",
+      "sarcastic": "Ah yes, chopping vegetables—because adulting is *so* relaxing.",
+      "humorous_tech": "When you refactor your salad prep script and finally get the zucchini diced perfectly.",
+      "humorous_non_tech": "When you finally decide to cook something healthy and immediately regret it."
+    }
+  },
+  {
+    "task_id": "v8",
+    "captions": {
+      "formal": "The static frame showcases an outdoor track and field stadium featuring an 8-lane running track with numbers 1-8 clearly painted on its surface.",
+      "sarcastic": "Ah yes, a perfectly organized track – because chaos wasn't an option.",
+      "humorous_tech": "When you refactor your workout routine to include eight lanes, just to avoid collisions with other runners.",
+      "humorous_non_tech": "When you finally commit to a fitness goal and realize you're not quite as fast as you thought."
+    }
+  }
+]
