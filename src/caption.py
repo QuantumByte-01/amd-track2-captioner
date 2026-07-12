@@ -12,13 +12,18 @@ _META_RE = re.compile(
     r"in this scene|as an ai)\b",
     re.IGNORECASE,
 )
+_HEDGE_RE = re.compile(
+    r"\b(appears?|seems?|possibly|probably|might|maybe|perhaps|likely)\b",
+    re.IGNORECASE,
+)
 _WORD_RE = re.compile(r"\S+")
 
-_STYLE_LIMITS = {
-    "formal": 30,
-    "sarcastic": 22,
-    "humorous_tech": 20,
-    "humorous_non_tech": 20,
+# Hard ceiling per style (words). Prompts teach target ranges; code enforces ceiling only.
+_STYLE_CEILING = {
+    "formal": 35,
+    "sarcastic": 25,
+    "humorous_tech": 25,
+    "humorous_non_tech": 25,
 }
 
 
@@ -28,16 +33,26 @@ def _word_count(text: str) -> int:
 
 def _clean_caption(text: str) -> str:
     text = text.strip().strip('"').strip("'")
-    return _META_RE.sub("", text).strip()
+    text = _META_RE.sub("", text).strip()
+    text = _HEDGE_RE.sub("", text)
+    return re.sub(r"\s{2,}", " ", text).strip()
 
 
 def _fits_limit(text: str, style: str) -> bool:
-    return _word_count(text) <= _STYLE_LIMITS.get(style, config.MAX_CAPTION_WORDS)
+    return _word_count(text) <= _STYLE_CEILING.get(style, config.MAX_CAPTION_WORDS)
+
+
+def _needs_regen(text: str, style: str) -> bool:
+    if not text or text.rstrip()[-1] not in ".!?":
+        return True
+    if _HEDGE_RE.search(text):
+        return True
+    return not _fits_limit(text, style)
 
 
 def _sentence_trim(text: str, style: str) -> str | None:
     """Return longest prefix of complete sentences within word limit, or None."""
-    limit = _STYLE_LIMITS.get(style, config.MAX_CAPTION_WORDS)
+    limit = _STYLE_CEILING.get(style, config.MAX_CAPTION_WORDS)
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     out: list[str] = []
     count = 0
@@ -126,12 +141,12 @@ def _write_batch(fact_sheet: dict, styles: list[str], k: int) -> dict[str, list[
 
 def _write_one_style(fact_sheet: dict, style: str, temperature: float = 0.5) -> str:
     system = llm.load_prompt("write.txt")
-    limit = _STYLE_LIMITS.get(style, 30)
+    limit = _STYLE_CEILING.get(style, 35)
     definition = config.STYLE_DEFINITIONS[style]
     user = (
         f"FACT SHEET:\n{json.dumps(fact_sheet, ensure_ascii=False)}\n\n"
         f"Write exactly ONE complete caption for style '{style}' ({definition}).\n"
-        f"MAX {limit} words. Return JSON only: {{\"caption\": \"...\"}}"
+        f"MAX {limit} words. No hedging words. Return JSON only: {{\"caption\": \"...\"}}"
     )
     messages = [
         {"role": "system", "content": system},
@@ -155,10 +170,10 @@ def _write_one_style(fact_sheet: dict, style: str, temperature: float = 0.5) -> 
 
 
 def _regenerate_if_bad(fact_sheet: dict, style: str, caption: str) -> str:
-    if _fits_limit(caption, style) and caption.rstrip()[-1] in ".!?":
+    if not _needs_regen(caption, style):
         return caption
     try:
-        return _write_one_style(fact_sheet, style, temperature=0.25)
+        return _write_one_style(fact_sheet, style, temperature=0.6)
     except Exception:
         trimmed = _sentence_trim(caption, style)
         return trimmed or caption
