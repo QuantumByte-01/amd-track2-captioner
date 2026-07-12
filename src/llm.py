@@ -114,7 +114,14 @@ def _post_chat(
     data = resp.json()
     choice = data["choices"][0]
     msg = choice["message"]
-    content = msg.get("content") or msg.get("reasoning_content") or ""
+    content = msg.get("content") or ""
+    if not str(content).strip() and msg.get("reasoning_content"):
+        # Last resort: some Kimi responses embed JSON only in reasoning tail
+        rc = str(msg.get("reasoning_content"))
+        try:
+            content = _extract_json_object(rc)
+        except ValueError:
+            content = rc
     finish = choice.get("finish_reason", "")
     if content is None or (isinstance(content, str) and not content.strip()):
         print(
