@@ -30,7 +30,7 @@ DL_WORKERS = int(os.environ.get("DL_WORKERS", "6"))
 CALL_TIMEOUT = int(os.environ.get("CALL_TIMEOUT", "90"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "3"))
 SOFT_DEADLINE_SEC = int(os.environ.get("SOFT_DEADLINE_SEC", "540"))
-PER_CLIP_BUDGET_SEC = int(os.environ.get("PER_CLIP_BUDGET_SEC", "75"))
+PER_CLIP_BUDGET_SEC = int(os.environ.get("PER_CLIP_BUDGET_SEC", "90"))
 MAX_CAPTION_WORDS = int(os.environ.get("MAX_CAPTION_WORDS", "35"))
 TRY_GEMMA_FIRST = os.environ.get("TRY_GEMMA_FIRST", "0") == "1"
 GEMMA_MODEL = os.environ.get("GEMMA_MODEL", "")
