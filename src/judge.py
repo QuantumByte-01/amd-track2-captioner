@@ -33,9 +33,7 @@ def pick_best(
         numbered_blocks.append(f"STYLE: {style}\nDEFINITION: {definition}\nCANDIDATES:\n{lines}")
 
     system = llm.load_prompt("judge.txt") + (
-        "\n\nWhen multiple STYLE blocks are provided, return JSON:"
-        '\n{"results":{"formal":{"best":0,"scores":[...]}, ...}}'
-        " with one entry per style."
+        '\n\nReturn JSON: {"results":{"formal":{"best":0,"scores":[...]}, ...}}'
     )
     user = (
         f"FACT SHEET:\n{json.dumps(fact_sheet, ensure_ascii=False)}\n\n"
@@ -48,6 +46,7 @@ def pick_best(
     try:
         result = llm.chat(
             messages,
+            model=config.MODEL_CAPTION,
             json_mode=True,
             temperature=0.0,
             max_tokens=1200,
