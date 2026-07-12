@@ -50,30 +50,24 @@ def _validate(sheet: dict) -> bool:
 
 def ground(frame_paths: list[str]) -> dict:
     """Extract a fact sheet from frame images."""
-    messages = _build_messages(frame_paths)
-    result = llm.chat(
-        messages,
-        model=config.MODEL_VISION,
-        json_mode=True,
-        temperature=0.2,
-        max_tokens=1400,
-        stage="ground",
-        vision=True,
-    )
-    if not isinstance(result, dict) or not _validate(result):
-        result = llm.chat(
-            messages,
-            model=config.MODEL_VISION,
-            json_mode=True,
-            temperature=0.0,
-            max_tokens=1400,
-            stage="ground-retry",
-            vision=True,
-        )
-    if not isinstance(result, dict):
-        raise ValueError("ground returned non-dict")
-    if not _validate(result):
-        raise ValueError("ground fact sheet unusable")
-    for key in REQUIRED_KEYS:
-        result.setdefault(key, [] if key not in ("setting", "camera") else "")
-    return result
+    for n in (len(frame_paths), max(4, len(frame_paths) // 2)):
+        frames = frame_paths[:n]
+        messages = _build_messages(frames)
+        for stage, temp in (("ground", 0.2), ("ground-retry", 0.0)):
+            try:
+                result = llm.chat(
+                    messages,
+                    model=config.MODEL_VISION,
+                    json_mode=True,
+                    temperature=temp,
+                    max_tokens=2048,
+                    stage=stage,
+                    vision=True,
+                )
+                if isinstance(result, dict) and _validate(result):
+                    for key in REQUIRED_KEYS:
+                        result.setdefault(key, [] if key not in ("setting", "camera") else "")
+                    return result
+            except Exception:
+                continue
+    raise ValueError("ground fact sheet unusable")
