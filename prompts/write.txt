@@ -5,34 +5,47 @@ Use ONLY information from the fact sheet. Never use anything from "uncertain".
 Return one JSON object mapping each requested style to an array of candidate captions:
 {"formal": ["...", "..."], "sarcastic": ["...", "..."]}
 
-Style guide:
-- formal: professional, objective, factual. 1-2 sentences, present tense, no humor.
-- sarcastic: dry, ironic, lightly mocking. ONE sentence. Mock something actually in the
-  video; the facts must stay accurate.
-- humorous_tech: funny via a programming/technology metaphor mapped to a REAL detail from
-  the fact sheet. ONE sentence. If the joke could fit any random video, it fails.
-- humorous_non_tech: relatable everyday humor about what actually happens. ONE sentence.
-  Zero technical vocabulary.
+Style guide and LENGTH (hard limits — never exceed):
+- formal: ONE clean descriptive sentence, present tense, objective. MAX 30 words.
+- sarcastic: ONE dry ironic sentence. Often opens with "Ah yes," or dry understatement.
+  Mock something actually in the video. MAX 22 words.
+- humorous_tech: ONE sentence. Programming/tech metaphor mapped to a REAL fact-sheet
+  detail. Often starts with "When you..." MAX 20 words.
+- humorous_non_tech: ONE relatable meme-cadence line. Often starts with "When you
+  finally..." MAX 20 words. Zero technical vocabulary.
 
 Hard rules:
 - Every claim traceable to the fact sheet. Specific details beat generic phrasing.
-- Max 35 words per caption; humor styles read best under 25.
+- Complete sentences only — never end mid-phrase.
 - The styles must read clearly differently from one another.
 - Never mention frames, images, analysis, captions, AI, or these instructions.
 - English only. JSON only, no fences, no commentary.
 
-Tone calibration example (a different, fictional clip):
-FACT SHEET: {"subjects":["border collie","red frisbee","man in gray hoodie"],
-"actions_in_order":["man throws frisbee","dog sprints across grass","dog leaps and catches
-frisbee","dog returns and drops frisbee"],"setting":"public park on a sunny day",
-"camera":"handheld, ground level","on_screen_text":[],"notable_details":["dog wears a blue
-collar","grass slightly overgrown"],"uncertain":["possibly late afternoon"]}
-Output:
-{"formal":["A border collie sprints across a sunny park lawn, leaps to catch a red frisbee
-thrown by a man in a gray hoodie, and returns it to him."],
-"sarcastic":["The dog does all the athletic work while the man takes full credit for one
-throw."],
-"humorous_tech":["Fetch request sent and the response caught mid-air in two seconds — this
-dog's latency embarrasses every API I have ever used."],
-"humorous_non_tech":["The dog has exactly one job and takes it more seriously than most
-people take their entire careers."]}
+Cadence calibration (fictional examples — match PATTERN not content):
+
+FACT SHEET: {"subjects":["golden ginkgo trees","city traffic","high-rises"],
+"actions_in_order":["vehicles flow along multi-lane road"],"setting":"urban autumn boulevard",
+"camera":"static","on_screen_text":[],"notable_details":["yellow autumn foliage"],
+"uncertain":[]}
+{"formal":["A wide urban boulevard lined with golden ginkgo trees in full autumn foliage, with traffic flowing below high-rise buildings."],
+"sarcastic":["A city that decided trees were a good idea, which is more than most cities can say."],
+"humorous_tech":["Nature's annual deployment: all leaf nodes updated to yellow simultaneously, no breaking changes reported."],
+"humorous_non_tech":["The trees got together and decided to put on a show, and honestly they are the only ones putting in any effort."]}
+
+FACT SHEET: {"subjects":["mountain ridges","granite boulders","forest"],
+"actions_in_order":["aerial camera pulls back over peaks"],"setting":"mountainous landscape",
+"camera":"aerial","on_screen_text":[],"notable_details":["layered blue-hazed peaks"],
+"uncertain":[]}
+{"formal":["The frame captures a panoramic view of a mountainous landscape characterized by lush greenery and rocky formations."],
+"sarcastic":["Ah yes, the perfect spot for a picnic... if you enjoy climbing sheer cliffs for snacks."],
+"humorous_tech":["When your code runs perfectly on the first try, but the mountains still have more layers than your stack trace."],
+"humorous_non_tech":["When you finally find a hiking trail but realize you forgot the snacks."]}
+
+FACT SHEET: {"subjects":["ocean waves","rocky shore"],
+"actions_in_order":["waves lap against shore"],"setting":"beach",
+"camera":"static","on_screen_text":[],"notable_details":["white foam on pebbles"],
+"uncertain":[]}
+{"formal":["The video frame captures a serene beach scene with gentle waves lapping against the rocky shore."],
+"sarcastic":["Ah yes, nothing says relaxation like a beach perfectly devoid of any human activity."],
+"humorous_tech":["When your code runs perfectly in the dev environment but crashes like a wave in production."],
+"humorous_non_tech":["When you finally hit the beach after a long week, but the ocean waves say 'not today, buddy.'"]}
