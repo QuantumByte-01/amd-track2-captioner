@@ -4,6 +4,10 @@ Containerized video captioning agent for **AMD Developer Hackathon ACT II, Track
 
 ## Architecture
 
+> **Gemma on AMD:** The identical pipeline runs **Gemma-3-12B end-to-end** (grounding,
+> styling, judging) on **AMD Instinct MI300X** via ROCm + vLLM. The leaderboard Docker
+> image uses serverless Kimi K2.6 + GLM 5.2 for post-deadline grader availability.
+
 ```
 tasks.json → parallel downloads → per clip (4 workers):
   ffmpeg uniform-seek frames (8 @ 768px)
