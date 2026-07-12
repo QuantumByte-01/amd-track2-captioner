@@ -1,25 +1,43 @@
-"""Output validation and repair."""
+"""Output validation, repair, and fact-derived fallbacks."""
 
 from __future__ import annotations
 
 from src import config
 
 
-def _minimal_caption(style: str, hint: str = "") -> str:
-    base = hint.strip() or "A short video clip."
+def fact_hint(sheet: dict | None) -> str:
+    if not isinstance(sheet, dict):
+        return ""
+    parts: list[str] = []
+    subjects = sheet.get("subjects") or []
+    actions = sheet.get("actions_in_order") or []
+    setting = str(sheet.get("setting", "")).strip()
+    details = sheet.get("notable_details") or []
+    if subjects:
+        parts.append(", ".join(str(s) for s in subjects[:3]))
+    if actions:
+        parts.append(str(actions[0]))
+    if setting:
+        parts.append(setting)
+    elif details:
+        parts.append(str(details[0]))
+    return "; ".join(p for p in parts if p)
+
+
+def _minimal_caption(style: str, hint: str = "", sheet: dict | None = None) -> str:
+    hint = hint.strip() or fact_hint(sheet) or "a short video scene"
+    hint = hint.rstrip(".")
     templates = {
-        "formal": f"The footage shows {base.rstrip('.')}.",
-        "sarcastic": f"Sure, {base.rstrip('.')} — riveting cinema.",
+        "formal": f"The footage shows {hint}.",
+        "sarcastic": f"Fascinating — {hint}, and somehow still the highlight of the day.",
         "humorous_tech": (
-            f"This clip deployed more pixels than my last CI pipeline, "
-            f"and with fewer errors."
+            f"My build pipeline processes {hint} with fewer retries than this clip has frames."
         ),
         "humorous_non_tech": (
-            f"Somehow this is exactly the kind of video you end up watching "
-            f"at midnight."
+            f"This is exactly the kind of moment where {hint.split(';')[0].lower()} steals the show."
         ),
     }
-    return templates.get(style, base)
+    return templates.get(style, f"The footage shows {hint}.")
 
 
 def validate_and_repair(
