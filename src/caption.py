@@ -8,6 +8,14 @@ import re
 from src import config, llm
 
 _WORD_RE = re.compile(r"\S+")
+_JSON_OBJ_RE = re.compile(r"\{[\s\S]*\}")
+
+
+def _extract_json_object(text: str) -> str:
+    m = _JSON_OBJ_RE.search(text)
+    if not m:
+        raise ValueError("no JSON object in response")
+    return m.group(0)
 
 
 def _truncate_caption(text: str) -> str:
@@ -66,6 +74,16 @@ def generate(
         max_tokens=1600,
         stage="write",
     )
+    if not isinstance(result, dict):
+        result = llm.chat(
+            messages,
+            json_mode=False,
+            temperature=0.7,
+            max_tokens=1600,
+            stage="write-text",
+        )
+        if isinstance(result, str):
+            result = json.loads(_extract_json_object(result))
     if not isinstance(result, dict):
         raise ValueError("write returned non-dict")
 

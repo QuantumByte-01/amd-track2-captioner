@@ -22,6 +22,8 @@ def _strip_fences(text: str) -> str:
 
 def _parse_json(text: str) -> dict | list:
     cleaned = _strip_fences(text)
+    if not cleaned:
+        raise json.JSONDecodeError("empty content", text, 0)
     return json.loads(cleaned)
 
 
@@ -90,6 +92,8 @@ def _post_chat(
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"]
+    if content is None or (isinstance(content, str) and not content.strip()):
+        raise ValueError("empty model response")
     print(
         f"[llm] model={model} latency={latency:.2f}s ok",
         file=sys.stderr,
@@ -146,8 +150,14 @@ def chat(
                     return raw
                 try:
                     return _parse_json(str(raw))
-                except json.JSONDecodeError:
-                    return _repair_json(str(raw), current_model)
+                except (json.JSONDecodeError, ValueError):
+                    try:
+                        return _repair_json(str(raw), current_model)
+                    except Exception:
+                        if attempt < retries:
+                            time.sleep(1 if attempt == 0 else 2)
+                            continue
+                        raise
             except Exception as e:
                 last_err = e
                 if attempt < retries:
