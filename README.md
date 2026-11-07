@@ -1,4 +1,4 @@
-# StyleCap — Grounded Multi-Style Video Captioning
+# StyleCap: Grounded Multi-Style Video Captioning
 
 A containerized agent that watches short video clips and writes captions in **four styles** (formal, sarcastic, humorous-tech, humorous-non-tech). Every caption is grounded in a structured fact sheet extracted from the video frames, so the jokes stay true to what's on screen.
 
@@ -17,10 +17,10 @@ Built for the **AMD Developer Hackathon ACT II, Track 2** (lablab.ai, July 2026)
 
 1. **Download** clips in parallel (6 workers)
 2. **Sample** 6 frames per clip with ffmpeg (uniform seek, 768px)
-3. **Ground** — vision model extracts a strict JSON fact sheet (anti-hallucination)
-4. **Write** — text model batches 2 candidates per requested style
-5. **Judge** — one batched call picks the best caption per style
-6. **Repair** — length policy, schema validation, degradation ladder → always valid `results.json`
+3. **Ground**: vision model extracts a strict JSON fact sheet (anti-hallucination)
+4. **Write**: text model batches 2 candidates per requested style
+5. **Judge**: one batched call picks the best caption per style
+6. **Repair**: length policy, schema validation, degradation ladder → always valid `results.json`
 
 ![Pipeline architecture](assets/architecture.png)
 
@@ -86,7 +86,7 @@ cat output/results.json
 
 ### Gemma path (AMD MI300X partner demo)
 
-The **same pipeline** runs end-to-end on `google/gemma-3-12b-it` via vLLM + ROCm on AMD Instinct MI300X — ground, write, and judge. See [GEMMA_RESULTS.md](GEMMA_RESULTS.md) for timings (8 clips in **86s**) and sample output.
+The **same pipeline** runs end-to-end on `google/gemma-3-12b-it` via vLLM + ROCm on AMD Instinct MI300X: ground, write, and judge. See [GEMMA_RESULTS.md](GEMMA_RESULTS.md) for timings (8 clips in **86s**) and sample output.
 
 ```bash
 export LLM_BASE_URL=http://localhost:8000/v1
@@ -120,4 +120,4 @@ Dockerfile          # linux/amd64 submission image
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
