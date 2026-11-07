@@ -7,6 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY src/ src/
 COPY prompts/ prompts/
 COPY run.py .
-ARG FIREWORKS_API_KEY=""
-ENV FIREWORKS_API_KEY=${FIREWORKS_API_KEY}
 ENTRYPOINT ["python", "run.py"]

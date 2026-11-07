@@ -21,8 +21,6 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          build-args: |
-            FIREWORKS_API_KEY=${{ secrets.FIREWORKS_API_KEY }}
           tags: |
               ghcr.io/quantumbyte-01/amd-track2-captioner:latest
               ghcr.io/quantumbyte-01/amd-track2-captioner:v${{ github.run_number }}

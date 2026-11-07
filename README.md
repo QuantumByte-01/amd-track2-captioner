@@ -22,7 +22,7 @@ Copy these into the hackathon form:
 | **Demo Application URL** | https://github.com/QuantumByte-01/amd-track2-captioner#quick-start |
 | **Docker Image** | `ghcr.io/quantumbyte-01/amd-track2-captioner:v40` |
 
-Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest` (same digest as latest `v<N>` build).
+Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest`, rebuilt from `main`. Images no longer contain an API key; pass `FIREWORKS_API_KEY` at runtime.
 
 **Slides:** [StyleCap_Slides.pdf](StyleCap_Slides.pdf)  
 **Gemma on AMD MI300X evidence:** [GEMMA_RESULTS.md](GEMMA_RESULTS.md) · [samples/gemma_results.json](samples/gemma_results.json)
@@ -45,14 +45,15 @@ Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest` (same diges
 ## Quick start (graded Docker image)
 
 ```bash
-docker pull ghcr.io/quantumbyte-01/amd-track2-captioner:v40
+docker pull ghcr.io/quantumbyte-01/amd-track2-captioner:latest
 
 mkdir -p input output
 # tasks.json: list of {task_id, video_url, styles[]}
 docker run --rm \
+  -e FIREWORKS_API_KEY="$FIREWORKS_API_KEY" \
   -v "$PWD/input:/input" \
   -v "$PWD/output:/output" \
-  ghcr.io/quantumbyte-01/amd-track2-captioner:v40
+  ghcr.io/quantumbyte-01/amd-track2-captioner:latest
 
 cat output/results.json
 ```
@@ -97,7 +98,7 @@ cat output/results.json
 | Caption / judge | `accounts/fireworks/models/glm-5p2` |
 | API | `https://api.fireworks.ai/inference/v1` |
 
-`FIREWORKS_API_KEY` is baked at image build time (Track 2 rules). GHCR package is **public**.
+`FIREWORKS_API_KEY` is read from the environment at runtime (`docker run -e FIREWORKS_API_KEY=...`). It is not stored in the image.
 
 ### Gemma path (AMD MI300X partner demo)
 
