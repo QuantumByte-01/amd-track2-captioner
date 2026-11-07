@@ -1,31 +1,15 @@
 # StyleCap — Grounded Multi-Style Video Captioning
 
-**AMD Developer Hackathon ACT II · Track 2**  
-Containerized agent that watches short video clips and writes **four grounded caption styles** (formal, sarcastic, humorous-tech, humorous-non-tech).
+A containerized agent that watches short video clips and writes captions in **four styles** (formal, sarcastic, humorous-tech, humorous-non-tech). Every caption is grounded in a structured fact sheet extracted from the video frames, so the jokes stay true to what's on screen.
+
+Built for the **AMD Developer Hackathon ACT II, Track 2** (lablab.ai, July 2026). The same pipeline runs on hosted models via Fireworks or on **Gemma 3 12B served with vLLM on an AMD Instinct MI300X**.
 
 | | |
 |---|---|
-| **Team** | QuantumByte-01 |
-| **GitHub** | [quantibyte](https://github.com/QuantumByte-01) |
-| **Contact** | swastik.r.900@gmail.com |
-
----
-
-## Submission links (lablab Step 3)
-
-Copy these into the hackathon form:
-
-| Field | Value |
-|-------|-------|
-| **GitHub Repository** | https://github.com/QuantumByte-01/amd-track2-captioner |
-| **Demo Application Platform** | GitHub |
-| **Demo Application URL** | https://github.com/QuantumByte-01/amd-track2-captioner#quick-start |
-| **Docker Image** | `ghcr.io/quantumbyte-01/amd-track2-captioner:v40` |
-
-Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest`, rebuilt from `main`. Images no longer contain an API key; pass `FIREWORKS_API_KEY` at runtime.
-
-**Slides:** [StyleCap_Slides.pdf](StyleCap_Slides.pdf)  
-**Gemma on AMD MI300X evidence:** [GEMMA_RESULTS.md](GEMMA_RESULTS.md) · [samples/gemma_results.json](samples/gemma_results.json)
+| **Docker image** | `ghcr.io/quantumbyte-01/amd-track2-captioner:latest` (pass `FIREWORKS_API_KEY` at runtime) |
+| **Slides** | [StyleCap_Slides.pdf](StyleCap_Slides.pdf) |
+| **MI300X results** | [GEMMA_RESULTS.md](GEMMA_RESULTS.md) · [samples/gemma_results.json](samples/gemma_results.json) |
+| **CI** | GitHub Actions builds and publishes the image on every push to `main` |
 
 ---
 
@@ -42,7 +26,7 @@ Also available: `ghcr.io/quantumbyte-01/amd-track2-captioner:latest`, rebuilt fr
 
 ---
 
-## Quick start (graded Docker image)
+## Quick start (Docker)
 
 ```bash
 docker pull ghcr.io/quantumbyte-01/amd-track2-captioner:latest
